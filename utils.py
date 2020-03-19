@@ -49,6 +49,11 @@ def get_sent(data_path):
 	test_sent = get_test_examples(data_path)
 	return train_sent, dev_sent, test_sent
 
+def get_encode(tokenizer, text_a, text_b):
+	print("Getting sentences pair encode.")
+	encoded_pair = tokenizer.encode(text_a, text_b, add_special_tokens=True)
+	return encoded_pair
+
 def get_input_ids(tokenizer, data):
 	input_ids = []
 	print("")
