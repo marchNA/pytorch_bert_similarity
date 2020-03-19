@@ -18,7 +18,7 @@ from sklearn.metrics import matthews_corrcoef
 def train(config, model, train_dataloader, dev_dataloader, test_dataloader):
 
 	start_time = time.time()
-	# model.cuda()
+	
 	model.train()
 	param_optimizer = list(model.named_parameters())
 	no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
@@ -51,8 +51,10 @@ def train(config, model, train_dataloader, dev_dataloader, test_dataloader):
 			input_ids = trains[0].to(config.device)
 			segment_ids = trains[1].to(config.device)
 			mask_ids = trains[2].to(config.device)
-			labels = trains[3]
-			outputs = model(input_ids, segment_ids, mask_ids)
+			x = [input_ids, segment_ids, mask_ids]
+			labels = trains[3].to(config.device)
+
+			outputs = model(x)
 			model.zero_grad()
 			loss = F.cross_entropy(outputs, labels)
 
@@ -113,18 +115,29 @@ def evaluate(config, model, dataloader, test=False):
     predict_all = np.array([], dtype=int)
     labels_all = np.array([], dtype=int)
     with torch.no_grad():
-        for texts, labels in dataloader:
-            outputs = model(texts)
-            loss = F.cross_entropy(outputs, labels)
-            loss_total += loss
-            labels = labels.data.cpu().numpy()
-            predic = torch.max(outputs.data, 1)[1].cpu().numpy()
-            labels_all = np.append(labels_all, labels)
-            predict_all = np.append(predict_all, predic)
+      for i, dev in enumerate(dataloader):
+        # `batch` contains three pytoch tensor:
+        #		[0]: input ids
+        #		[1]: segment_ids
+        #		[2]: attention masks
+        #		[3]: labels
+        input_ids = dev[0].to(config.device)
+        segment_ids = dev[1].to(config.device)
+        mask_ids = dev[2].to(config.device)
+        x = [input_ids, segment_ids, mask_ids]
+        labels = dev[3].to(config.device)
+
+        outputs = model(x)
+        loss = F.cross_entropy(outputs, labels)
+        loss_total += loss
+        labels = labels.data.cpu().numpy()
+        predic = torch.max(outputs.data, 1)[1].cpu().numpy()
+        labels_all = np.append(labels_all, labels)
+        predict_all = np.append(predict_all, predic)
 
     acc = metrics.accuracy_score(labels_all, predict_all)
     if test:
-        report = metrics.classification_report(labels_all, predict_all, target_names=config.class_list, digits=4)
-        confusion = metrics.confusion_matrix(labels_all, predict_all)
-        return acc, loss_total / len(dataloader), report, confusion
+      report = metrics.classification_report(labels_all, predict_all, target_names=config.class_list, digits=4)
+      confusion = metrics.confusion_matrix(labels_all, predict_all)
+      return acc, loss_total / len(dataloader), report, confusion
     return acc, loss_total / len(dataloader)

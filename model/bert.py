@@ -12,10 +12,12 @@ class Model(nn.Module):
         for param in self.bert.parameters():
             param.requires_grad = True
         self.fc = nn.Linear(config.hidden_size, config.num_classes)
+        self.config = config
 
     def forward(self, x):
-        context = x[0]  # 输入的句子
-        mask = x[2]  # 对padding部分进行mask，和句子一个size，padding部分用0表示，如：[1, 1, 1, 1, 0, 0]
-        _, pooled = self.bert(context, attention_mask=mask)
-        out = self.fc(pooled)
+        input_ids = x[0].to(self.config.device)
+        segment_ids = x[1].to(self.config.device)
+        mask_ids = x[2].to(self.config.device)
+        _, pooled = self.bert(input_ids=input_ids, attention_mask=mask_ids, token_type_ids=segment_ids)
+        out = self.fc(pooled).to(self.config.device)
         return out
