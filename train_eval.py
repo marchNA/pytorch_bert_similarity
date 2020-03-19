@@ -47,10 +47,12 @@ def train(config, model, train_dataloader, dev_dataloader, test_dataloader):
 			#		[0]: input ids
 			#		[1]: segment_ids
 			#		[2]: attention masks
-			#		[2]: labels
-			trains = trains[:3]
-			labels = trains[-1]
-			outputs = model(trains)
+			#		[3]: labels
+			input_ids = trains[0].to(config.device)
+			segment_ids = trains[1].to(config.device)
+			mask_ids = trains[2].to(config.device)
+			labels = trains[3]
+			outputs = model(input_ids, segment_ids, mask_ids)
 			model.zero_grad()
 			loss = F.cross_entropy(outputs, labels)
 

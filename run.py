@@ -7,11 +7,9 @@ from model.bert import Model
 from utils import get_sent, get_input, get_data_loader, printm, format_time
 
 
-data_path = 'D:/DeepLearning/code/pytorch-bert-similarity/data'
-# data_path = './data'
+data_path = './data'
 
-bert_path = 'E:/NLP_DATA/bert/pytorch'
-# bert_path = '/content/bert-utils/bert/multilingual_L-12_H-768_A-12'
+bert_path = '/content/pytorch_bert_similarity/bert/multilingual_L-12_H-768_A-12'
 
 if __name__ =='__main__':
 	config = Config(data_path, bert_path)
