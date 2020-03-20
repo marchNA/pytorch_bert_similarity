@@ -1,0 +1,1 @@
+将bert模型中的ckpt文件、vocab.txt、config.json放到这里。

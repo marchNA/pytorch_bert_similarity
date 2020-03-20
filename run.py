@@ -9,17 +9,17 @@ from utils import get_sent, get_input, get_data_loader, printm, format_time
 
 data_path = './data'
 
-bert_path = '/content/pytorch_bert_similarity/bert/multilingual_L-12_H-768_A-12'
+bert_path = './bert'
 
 if __name__ =='__main__':
 	config = Config(data_path, bert_path)
-	if config.device == 'cuda':
-		memoryUtil = printm()
-		if memoryUtil > 0.2:
-			try:
-				os._exit(0)
-			except:
-				print('MemoryUtil FULL')
+	memoryUtil = printm(config)
+  	print(memoryUtil)	
+	if memoryUtil > 0.2:
+		try:
+			os._exit(0)
+		except:
+			print('MemoryUtil FULL')
 
 	start_time = time.time()
 	print("Loading data...")
