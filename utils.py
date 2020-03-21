@@ -8,45 +8,27 @@ from tqdm import tqdm as tqdm
 from keras.preprocessing.sequence import pad_sequences
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 
-def get_train_examples(data_dir):
-    file_path = os.path.join(data_dir, 'train.csv')
-    train_df = pd.read_csv(file_path, encoding='utf-8')
-    train_data = []
-    for index, train in enumerate(train_df.values):
-        text_a = str(train[0]) # 转换编码格式
-        text_b = str(train[1])
-        label = str(train[2])
-        train_data.append([[text_a, text_b], label])
-    return train_data
-
-def get_dev_examples(data_dir):
-    file_path = os.path.join(data_dir, 'dev.csv')
-    dev_df = pd.read_csv(file_path, encoding='utf-8')
-    dev_data = []
-    for index, dev in enumerate(dev_df.values):
-        guid = 'dev-%d' % index
-        text_a = str(dev[0])
-        text_b = str(dev[1])
-        label = str(dev[2])
-        dev_data.append([[text_a, text_b], label])
-    return dev_data
-
-def get_test_examples(data_dir):
-    file_path = os.path.join(data_dir, 'test.csv')
-    test_df = pd.read_csv(file_path, encoding='utf-8')
-    test_data = []
-    for index, test in enumerate(test_df.values):
-    	guid = 'test-%d' % index
-    	text_a = str(test[0])
-    	text_b = str(test[1])
-    	label = str(test[2])
-    	test_data.append([[text_a, text_b], label])
-    return test_data
+def get_examples(data_dir, filename):
+    file_path = os.path.join(data_dir, filename)
+    df = pd.read_csv(file_path, encoding='utf-8')
+    datas = []
+    for index, data in enumerate(df.values):
+        text_a = str(data[0]) # 转换编码格式
+        text_b = str(data[1])
+        label = str(data[2])
+        datas.append([[text_a, text_b], label])
+    return datas
 
 def get_sent(data_path):
-	train_sent = get_train_examples(data_path)
-	dev_sent = get_dev_examples(data_path)
-	test_sent = get_test_examples(data_path)
+	train_sent = get_examples(data_path, 'train.csv')
+	dev_sent = get_examples(data_path, 'dev.csv')
+	test_sent = get_examples(data_path, 'test.csv')
+	return train_sent, dev_sent, test_sent
+
+def get_demo_sent(data_path):
+	train_sent = get_examples(data_path, 'train_demo.csv')
+	dev_sent = get_examples(data_path, 'dev_demo.csv')
+	test_sent = get_examples(data_path, 'test_demo.csv')
 	return train_sent, dev_sent, test_sent
 
 def get_encode(tokenizer, text_a, text_b):

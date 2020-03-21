@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import time
 import torch
 import torch.nn as nn
@@ -19,7 +20,7 @@ def train(config, model, train_dataloader, dev_dataloader, test_dataloader):
 
 	start_time = time.time()
 	
-	model.train()
+	# model.cuda()
 	param_optimizer = list(model.named_parameters())
 	no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 	optimizer_grouped_parameters = [
@@ -51,12 +52,11 @@ def train(config, model, train_dataloader, dev_dataloader, test_dataloader):
 			input_ids = trains[0].to(config.device)
 			segment_ids = trains[1].to(config.device)
 			mask_ids = trains[2].to(config.device)
-			x = [input_ids, segment_ids, mask_ids]
 			labels = trains[3].to(config.device)
 
-			outputs = model(x)
+			outputs = model(input_ids=input_ids, attention_mask=mask_ids, token_type_ids=segment_ids, labels=labels)
 			model.zero_grad()
-			loss = F.cross_entropy(outputs, labels)
+			loss, logit = outputs	# outputs[0]: loss, outputs[1]: predict  (batch_size, num_classes)
 
 			loss.backward()
 
@@ -65,7 +65,7 @@ def train(config, model, train_dataloader, dev_dataloader, test_dataloader):
 			if total_batch % 100 == 0:
 				# 每多少轮输出在训练集和验证集上的效果
 				true = labels.data.cpu()
-				predic = torch.max(outputs.data, 1)[1].cpu()
+				predic = torch.max(logit.data, 1)[1].cpu()
 				train_acc = metrics.accuracy_score(true, predic)
 				dev_acc, dev_loss = evaluate(config, model, dev_dataloader)
 				if dev_loss < dev_best_loss:
@@ -115,29 +115,30 @@ def evaluate(config, model, dataloader, test=False):
     predict_all = np.array([], dtype=int)
     labels_all = np.array([], dtype=int)
     with torch.no_grad():
-      for i, dev in enumerate(dataloader):
-        # `batch` contains three pytoch tensor:
-        #		[0]: input ids
-        #		[1]: segment_ids
-        #		[2]: attention masks
-        #		[3]: labels
-        input_ids = dev[0].to(config.device)
-        segment_ids = dev[1].to(config.device)
-        mask_ids = dev[2].to(config.device)
-        x = [input_ids, segment_ids, mask_ids]
-        labels = dev[3].to(config.device)
+		for i, dev in enumerate(dataloader):
+			# `batch` contains three pytoch tensor:
+			#		[0]: input ids
+			#		[1]: segment_ids
+			#		[2]: attention masks
+			#		[3]: labels
+			input_ids = dev[0].to(config.device)
+			segment_ids = dev[1].to(config.device)
+			mask_ids = dev[2].to(config.device)
+			labels = dev[3].to(config.device)
 
-        outputs = model(x)
-        loss = F.cross_entropy(outputs, labels)
-        loss_total += loss
-        labels = labels.data.cpu().numpy()
-        predic = torch.max(outputs.data, 1)[1].cpu().numpy()
-        labels_all = np.append(labels_all, labels)
-        predict_all = np.append(predict_all, predic)
+			outputs = model(input_ids=input_ids, attention_mask=mask_ids, token_type_ids=segment_ids, labels=labels)
+			loss, logit = outputs[:2]
+
+			labels = labels.data.cpu().numpy()
+			predic = torch.max(logit.data, 1)[1].cpu().numpy()
+			labels_all = np.append(labels_all, labels)
+			predict_all = np.append(predict_all, predic)
+			loss_total += loss.item()
 
     acc = metrics.accuracy_score(labels_all, predict_all)
-    if test:
-      report = metrics.classification_report(labels_all, predict_all, target_names=config.class_list, digits=4)
-      confusion = metrics.confusion_matrix(labels_all, predict_all)
-      return acc, loss_total / len(dataloader), report, confusion
-    return acc, loss_total / len(dataloader)
+
+	if test:
+		report = metrics.classification_report(labels_all, predict_all, target_names=config.class_list, digits=4)
+		confusion = metrics.confusion_matrix(labels_all, predict_all)
+		return acc, loss_total / len(dataloader), report, confusion
+	return acc, loss_total / len(dataloader)
